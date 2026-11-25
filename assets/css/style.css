@@ -341,6 +341,20 @@ figcaption { margin-top: 14px; font-size: 13px; color: var(--muted); display: fl
 @keyframes draw { to { stroke-dashoffset: 0; } }
 
 @media (min-width: 861px) and (max-width: 1200px) { .story__house { left: auto; width: 60%; right: 0; top: 44%; } }
+/* desktop/laptop: size hero copy by viewport height too, so it never runs under the header */
+@media (min-width: 861px) {
+  .story__copy { bottom: clamp(76px, 13vh, 116px); max-width: min(580px, 46vw); }
+  .stage__t1, .stage__t2 { font-size: clamp(34px, min(4.3vw, 8vh), 62px); }
+  .stage__sub { margin-top: clamp(10px, 2vh, 18px); font-size: clamp(14px, min(1.5vw, 2.4vh), 17px); line-height: 1.55; }
+  .stage__btns { margin-top: clamp(16px, 3vh, 28px); }
+  .stage__step { margin-bottom: clamp(10px, 2vh, 18px); }
+  .keybar { bottom: clamp(20px, 4.5vh, 38px); }
+}
+@media (min-width: 861px) and (max-height: 700px) {
+  .stage__btns .btn { min-height: 46px; padding: 11px 22px; }
+  .story__stage { min-height: 0; }
+}
+@media (min-width: 861px) and (max-width: 1100px) { .story__copy { max-width: min(520px, 48vw); } }
 @media (max-width: 860px) {
   .story { height: 620vh; }
   .story__stage { display: flex; flex-direction: column; padding-top: var(--header-h); }
