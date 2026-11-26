@@ -290,7 +290,11 @@
     render(cur);
     if (cur !== target) raf = requestAnimationFrame(tick);
   }
+  var lastP = -1;
   function render(p) {
+    var pq = Math.round(p * 2000);
+    if (pq === lastP) return;
+    lastP = pq;
     var win = function (a, b) { return cl((p - a) / (b - a)); };
     var bump = function (a, b, f) { return Math.min(cl((p - a) / f), cl((b - p) / f)); };
 
@@ -315,7 +319,10 @@
     var dim = win(0.85, 0.88), relight = win(0.95, 0.98);
     el.wins.forEach(function (w, i) {
       var lit = win(0.43 + order[i] * 0.011, 0.45 + order[i] * 0.011);
-      var g = lit * (1 - dim * (1 - relight));
+      var g = Math.round(lit * (1 - dim * (1 - relight)) * 16) / 16;   // quantised so the glow filter is only rebuilt ~16 times, not every frame
+      var key = g + '|' + t1.toFixed(2);
+      if (w._k === key) return;
+      w._k = key;
       w.style.fill = g > 0.01 ? 'rgba(242,196,110,' + (0.2 + 0.8 * g).toFixed(3) + ')' : 'rgba(14,22,38,' + (0.9 * t1).toFixed(3) + ')';
       w.style.filter = g > 0.01 ? 'drop-shadow(0 0 ' + (14 * g).toFixed(1) + 'px rgba(242,196,110,.85))' : 'none';
       w.style.strokeOpacity = t1;
@@ -456,4 +463,78 @@
   window.addEventListener('scroll', req, { passive: true });
   window.addEventListener('resize', req);
   update();
+})();
+
+
+/* Reviews: the 5.0 counts up when the section scrolls into view */
+(function () {
+  'use strict';
+  var el = document.querySelector('.rv__score b');
+  if (!el) return;
+  var target = parseFloat(el.textContent) || 5;
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce || !('IntersectionObserver' in window)) return;
+  el.textContent = (0).toFixed(1);
+  var done = false;
+  new IntersectionObserver(function (entries, io) {
+    if (!entries[0].isIntersecting || done) return;
+    done = true; io.disconnect();
+    var t0 = null, dur = 1700;
+    function step(t) {
+      if (t0 === null) t0 = t;
+      var p = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+      el.textContent = (target * e).toFixed(1);
+      if (p < 1) requestAnimationFrame(step); else el.textContent = target.toFixed(1);
+    }
+    setTimeout(function () { requestAnimationFrame(step); }, 350);
+  }, { threshold: 0.5 }).observe(el);
+})();
+
+/* Reviews: scroll-linked fly-in. One card travels in from the left, the other from the right, and they meet as the section reaches mid-screen. */
+(function () {
+  'use strict';
+  var sec = document.querySelector('.rv');
+  if (!sec) return;
+  var cards = Array.prototype.slice.call(sec.querySelectorAll('.rv__card'));
+  if (cards.length < 2) return;
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var ticking = false;
+  function clamp(v) { return Math.max(0, Math.min(1, v)); }
+  function ease(t) { return 1 - Math.pow(1 - t, 3); }
+  function update() {
+    ticking = false;
+    if (reduce) { cards.forEach(function (c) { c.style.transform = ''; c.style.opacity = ''; c.classList.add('is-in'); }); return; }
+    var r = sec.getBoundingClientRect(), vh = window.innerHeight;
+    var p = clamp((vh - r.top) / (vh * 0.5 + r.height * 0.5));
+    var e = ease(clamp(p / 0.82));
+    var dist = Math.min(window.innerWidth * 0.62, 760);
+    cards.forEach(function (c) {
+      var dir = c.getAttribute('data-from') === 'left' ? -1 : 1;
+      var k = 1 - e;
+      c.style.transform = 'translate3d(' + (dir * dist * k).toFixed(1) + 'px,' + (k * 26).toFixed(1) + 'px,0) rotate(' + (dir * 5 * k).toFixed(2) + 'deg)';
+      c.style.opacity = clamp(e * 1.7).toFixed(3);
+      c.classList.toggle('is-in', e > 0.92);
+    });
+  }
+  function req() { if (!ticking) { ticking = true; requestAnimationFrame(update); } }
+  window.addEventListener('scroll', req, { passive: true });
+  window.addEventListener('resize', req);
+  update();
+})();
+
+/* hide the floating call/WhatsApp buttons while the pinned "What we do" section is on screen (they cover the cards) */
+(function () {
+  'use strict';
+  var hs = document.querySelector('.hs');
+  if (!hs) return;
+  var t = false;
+  function u() {
+    t = false;
+    var r = hs.getBoundingClientRect(), vh = window.innerHeight;
+    document.body.classList.toggle('hs-on', window.innerWidth <= 860 && r.top < vh * 0.3 && r.bottom > vh * 0.7);
+  }
+  function q() { if (!t) { t = true; requestAnimationFrame(u); } }
+  window.addEventListener('scroll', q, { passive: true });
+  window.addEventListener('resize', q);
+  u();
 })();
