@@ -1455,3 +1455,9 @@ body.hs-on .call-fab, body.hs-on .wa-fab { opacity: 0; pointer-events: none; tra
   filter: drop-shadow(1px 0 0 var(--ol)) drop-shadow(-1px 0 0 var(--ol)) drop-shadow(0 1px 0 var(--ol)) drop-shadow(0 -1px 0 var(--ol));
 }
 .site-footer .ft__top, .btn:active { filter: none; }
+
+/* footer location: plain line with a pin, no pill or pulsing dot */
+.ft__brand .ft__loc { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 15px; color: var(--copper-light); max-width: none; }
+.ft__loc svg { width: 18px; height: 18px; flex: none; }
+.ft__chip { display: none; }
+@media (max-width: 1100px) { .nav a.btn { font-size: 17px; font-weight: 600; } }
