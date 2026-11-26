@@ -538,3 +538,33 @@
   window.addEventListener('resize', q);
   u();
 })();
+
+/* Explore cards: scroll-linked slide-in, big photo from the left, the two cards from the right (one after the other) */
+(function () {
+  'use strict';
+  var wrap = document.querySelector('.explore');
+  if (!wrap) return;
+  var items = Array.prototype.slice.call(wrap.querySelectorAll('[data-slide]'));
+  if (!items.length) return;
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var t = false;
+  function cl(v) { return Math.max(0, Math.min(1, v)); }
+  function u() {
+    t = false;
+    if (reduce) { items.forEach(function (e) { e.style.transform = ''; e.style.opacity = ''; }); return; }
+    var vh = window.innerHeight, r = wrap.getBoundingClientRect();
+    var p = cl((vh - r.top) / (vh * 0.55 + r.height * 0.45));
+    var dist = Math.min(window.innerWidth * 0.5, 620);
+    items.forEach(function (e) {
+      var dir = e.getAttribute('data-slide') === 'left' ? -1 : 1;
+      var d = parseFloat(e.getAttribute('data-d') || '0') * 0.12;
+      var k = Math.pow(1 - cl((p - d) / (0.8 - d)), 3);
+      e.style.transform = 'translate3d(' + (dir * dist * k).toFixed(1) + 'px,' + (k * 24).toFixed(1) + 'px,0) rotate(' + (dir * 3 * k).toFixed(2) + 'deg)';
+      e.style.opacity = (1 - k * 1.1 > 0 ? Math.min(1, (1 - k) * 1.8) : 0).toFixed(3);
+    });
+  }
+  function q() { if (!t) { t = true; requestAnimationFrame(u); } }
+  window.addEventListener('scroll', q, { passive: true });
+  window.addEventListener('resize', q);
+  u();
+})();

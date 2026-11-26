@@ -1366,3 +1366,92 @@ body.hs-on .call-fab, body.hs-on .wa-fab { opacity: 0; pointer-events: none; tra
 /* corners: slightly softer leaf */
 :root { --leaf: 28px 0 28px 0; --leaf-sm: 14px 0 14px 0; }
 @media (max-width: 640px) { :root { --leaf: 22px 0 22px 0; --leaf-sm: 12px 0 12px 0; } }
+.explore [data-slide] { will-change: transform, opacity; }
+
+/* ---------- Key buttons v2: proper key silhouette + blue hover ----------
+   bow (ring with hole) on the left, slimmer shaft carrying the label, bit teeth hanging under the shaft's end.
+   --kh = shaft height. Bow = 1.25 x shaft. */
+:root { --blue-hover: #2F4B80; }
+.btn {
+  --bow: calc(var(--kh) * 1.25); --gap: calc(var(--kh) * .125); --tooth: calc(var(--kh) * .125 + 5px);
+  min-height: calc(var(--bow) + 5px);
+  padding: var(--gap) 24px calc(var(--gap) + 5px) calc(var(--bow) + 6px);
+  white-space: nowrap; line-height: 1.1;
+  transform-origin: calc(var(--bow) / 2) calc(var(--bow) / 2);
+  -webkit-mask:
+    radial-gradient(closest-side, transparent 30%, #000 32%, #000 97%, transparent 100%) 0 0 / var(--bow) var(--bow) no-repeat,
+    linear-gradient(#000, #000) calc(var(--bow) * .62) var(--gap) / calc(100% - var(--bow) * .62) var(--kh) no-repeat,
+    linear-gradient(#000, #000) right 0 bottom 0 / 9px var(--tooth) no-repeat,
+    linear-gradient(#000, #000) right 15px bottom 0 / 9px calc(var(--tooth) - 3px) no-repeat,
+    linear-gradient(#000, #000) right 30px bottom 0 / 9px var(--tooth) no-repeat;
+          mask:
+    radial-gradient(closest-side, transparent 30%, #000 32%, #000 97%, transparent 100%) 0 0 / var(--bow) var(--bow) no-repeat,
+    linear-gradient(#000, #000) calc(var(--bow) * .62) var(--gap) / calc(100% - var(--bow) * .62) var(--kh) no-repeat,
+    linear-gradient(#000, #000) right 0 bottom 0 / 9px var(--tooth) no-repeat,
+    linear-gradient(#000, #000) right 15px bottom 0 / 9px calc(var(--tooth) - 3px) no-repeat,
+    linear-gradient(#000, #000) right 30px bottom 0 / 9px var(--tooth) no-repeat;
+}
+.btn::after { top: var(--gap); bottom: calc(var(--gap) + 5px); }
+.nav a.btn { min-height: calc(var(--kh) * 1.25 + 5px); padding: calc(var(--kh) * .125) 26px calc(var(--kh) * .125 + 5px) calc(var(--kh) * 1.25 + 8px); }
+@media (max-width: 1100px) { .nav a.btn { --kh: 52px; } }
+
+/* blue hover on every button (the sweep fill is now blue, label turns white) */
+.btn--copper::before, .btn--ghost::before, .btn--navy::before { background: var(--blue-hover); }
+.btn--copper:hover, .btn--ghost:hover, .btn--navy:hover,
+.site-header .nav .btn.btn--copper:hover, .dark a.btn:hover, .dark .btn:hover { color: #fff; }
+
+/* hero: only the active slide receives the mouse, so its buttons can be hovered and clicked */
+.stage:not(.is-active) { pointer-events: none; }
+.stage.is-active { pointer-events: auto; }
+
+/* hover colours taken from the logo: copper family, navy label */
+.btn--copper::before { background: var(--copper-light); }
+.btn--ghost::before, .btn--navy::before { background: var(--copper); }
+.btn--copper:hover, .btn--ghost:hover, .btn--navy:hover,
+.site-header .nav .btn.btn--copper:hover, .dark a.btn:hover, .dark .btn:hover { color: var(--navy); }
+.btn--copper:hover { filter: drop-shadow(0 6px 14px rgba(237, 183, 149, .35)); }
+
+/* navy buttons are now logo copper at rest; hover sweeps in logo navy */
+.btn--navy { background: var(--copper); color: var(--navy); }
+.btn--navy::before { background: var(--navy); }
+.btn--navy:hover { color: var(--copper-light); }
+.btn--navy:hover { filter: drop-shadow(0 6px 14px rgba(26, 40, 66, .25)); }
+
+/* ---------- Key buttons v3: outlined real-key silhouette ----------
+   The key shape is now the FILL layer (::before, masked); the button itself is unmasked, so a drop-shadow outline can follow
+   the whole shape: bow, hole, collar, blade and teeth. */
+.btn {
+  --ol: var(--navy);
+  --km:
+    radial-gradient(closest-side, transparent 30%, #000 32%, #000 97%, transparent 100%) 0 0 / var(--bow) var(--bow) no-repeat,
+    linear-gradient(#000, #000) calc(var(--bow) * .8) calc(var(--gap) / 2) / 7px calc(var(--kh) + var(--gap)) no-repeat,
+    linear-gradient(#000, #000) calc(var(--bow) * .62) var(--gap) / calc(100% - var(--bow) * .62) var(--kh) no-repeat,
+    linear-gradient(#000, #000) right 0 bottom 0 / 9px var(--tooth) no-repeat,
+    linear-gradient(#000, #000) right 15px bottom 0 / 9px calc(var(--tooth) - 3px) no-repeat,
+    linear-gradient(#000, #000) right 30px bottom 0 / 9px var(--tooth) no-repeat;
+  -webkit-mask: none; mask: none; overflow: visible; background: none !important;
+  padding-left: calc(var(--bow) + 14px);
+  filter: drop-shadow(1px 0 0 var(--ol)) drop-shadow(-1px 0 0 var(--ol)) drop-shadow(0 1px 0 var(--ol)) drop-shadow(0 -1px 0 var(--ol));
+}
+.story .btn, .dark .btn, .site-header .btn, .cta-band .btn, .hs .btn, .site-footer .btn { --ol: var(--copper-light); }
+.btn.btn--copper { --fill: var(--copper); --sweep: var(--copper-light); }
+.btn.btn--navy { --fill: var(--copper); --sweep: var(--navy); }
+.btn.btn--ghost { --fill: rgba(242, 236, 227, .14); --sweep: var(--copper); }
+.btn::before {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  background-color: var(--fill); background-image: linear-gradient(var(--sweep), var(--sweep)); background-repeat: no-repeat; background-position: 0 0; background-size: 0% 100%;
+  -webkit-mask: var(--km); mask: var(--km);
+  transform: none !important; transition: background-size .55s var(--ease-out);
+}
+.btn:hover::before { background-size: 100% 100%; }
+.btn::after { -webkit-mask: var(--km); mask: var(--km); top: 0; bottom: 0; }
+.btn.btn--copper:hover, .btn.btn--navy:hover, .btn.btn--ghost:hover { filter: drop-shadow(1px 0 0 var(--ol)) drop-shadow(-1px 0 0 var(--ol)) drop-shadow(0 1px 0 var(--ol)) drop-shadow(0 -1px 0 var(--ol)) drop-shadow(0 8px 14px rgba(8, 12, 22, .28)); }
+.nav a.btn { padding-left: calc(var(--kh) * 1.25 + 16px); }
+.btn.btn--ghost { --fill: #34425F; }
+
+/* no shine streak and no hover shadow on key buttons */
+.btn::after { display: none !important; content: none; }
+.btn.btn--copper:hover, .btn.btn--navy:hover, .btn.btn--ghost:hover, .btn--copper:hover, .btn--navy:hover {
+  filter: drop-shadow(1px 0 0 var(--ol)) drop-shadow(-1px 0 0 var(--ol)) drop-shadow(0 1px 0 var(--ol)) drop-shadow(0 -1px 0 var(--ol));
+}
+.site-footer .ft__top, .btn:active { filter: none; }
