@@ -6,6 +6,24 @@
   doc.classList.add('js');
   var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  /* ---------- DEMO MODE: show only the home page ----------
+     Set HOME_ONLY = false to bring every page and link back. No page files are deleted. */
+  var HOME_ONLY = true;
+  if (HOME_ONLY) {
+    var isOther = function (h) { return h && !/^(https?:|mailto:|tel:|#|index\.html)/i.test(h) && /\.html/i.test(h); };
+    var file = location.pathname.split('/').pop();
+    if (file && file !== 'index.html' && /\.html$/i.test(file)) { location.replace('index.html'); return; }
+    // every link to a hidden page stays visible but points to "#" (original kept in data-href)
+    document.querySelectorAll("a[href]").forEach(function (a) {
+      var h = a.getAttribute("href");
+      if (isOther(h)) { a.setAttribute("data-href", h); a.setAttribute("href", "#"); }
+    });
+    document.addEventListener("click", function (e) {
+      var a = e.target.closest && e.target.closest("a[data-href]");
+      if (a) e.preventDefault();
+    });
+  }
+
   /* ---------- Header: scrolled state + mobile menu ---------- */
   var header = document.querySelector('.site-header');
   var toggle = document.querySelector('.menu-toggle');
@@ -29,8 +47,37 @@
     window.addEventListener('resize', function () { if (window.innerWidth > 1100) setMenu(false); });
   }
 
+  /* ---------- Scroll progress line ---------- */
+
+  /* ---------- Titles: split into words so they rise in one by one ---------- */
+  function splitWords(node, counter) {
+    Array.prototype.slice.call(node.childNodes).forEach(function (child) {
+      if (child.nodeType === 3) {
+        var frag = document.createDocumentFragment();
+        child.textContent.split(/(\s+)/).forEach(function (part) {
+          if (!part) return;
+          if (/^\s+$/.test(part)) { frag.appendChild(document.createTextNode(' ')); return; }
+          var w = document.createElement('span'); w.className = 'w';
+          var s = document.createElement('span'); s.style.setProperty('--i', counter.n++); s.textContent = part;
+          w.appendChild(s); frag.appendChild(w);
+        });
+        node.replaceChild(frag, child);
+      } else if (child.nodeType === 1) { splitWords(child, counter); }
+    });
+  }
+  var titles = [];
+  if (!reduceMotion) {
+    document.querySelectorAll('.h2, .display').forEach(function (el) {
+      if (el.closest('.hs, .story, .page-hero')) return;
+      el.setAttribute('aria-label', el.textContent.replace(/\s+/g, ' ').trim());
+      splitWords(el, { n: 0 });
+      el.classList.add('split-title');
+      titles.push(el);
+    });
+  }
+
   /* ---------- Reveal on scroll ---------- */
-  var revealEls = document.querySelectorAll('.reveal, .frame--reveal, [data-reveal]');
+  var revealEls = document.querySelectorAll('.reveal, .frame--reveal, [data-reveal], .split-title');
   if ('IntersectionObserver' in window && !reduceMotion) {
     var io = new IntersectionObserver(function (entries) {
       entries.forEach(function (e) {
@@ -317,4 +364,96 @@
   window.addEventListener('resize', measure);
   measure();
   render(0);
+})();
+
+/* Why Poience: stacking cards scale back as the next one covers them; the left index follows the active card */
+(function () {
+  'use strict';
+  var cards = Array.prototype.slice.call(document.querySelectorAll('.why2__card'));
+  if (!cards.length) return;
+  var idx = Array.prototype.slice.call(document.querySelectorAll('[data-why-idx] li'));
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var ticking = false, lastActive = -1;
+
+  function update() {
+    ticking = false;
+    var active = 0;
+    cards.forEach(function (c, i) {
+      var stick = parseFloat(getComputedStyle(c).top) || 0;
+      var top = c.getBoundingClientRect().top;
+      if (top <= stick + 40) active = i;
+      if (reduce) return;
+      var next = cards[i + 1], p = 0;
+      if (next) {
+        var span = c.offsetHeight * 0.9;
+        p = Math.max(0, Math.min(1, 1 - (next.getBoundingClientRect().top - stick - 26) / span));
+        if (top > stick + 4) p = 0;
+      }
+      c.style.transform = 'scale(' + (1 - p * 0.06).toFixed(4) + ')';
+      c.style.filter = p > 0 ? 'brightness(' + (1 - p * 0.28).toFixed(3) + ')' : '';
+    });
+    if (active !== lastActive) {
+      lastActive = active;
+      idx.forEach(function (li, i) { li.classList.toggle('is-on', i === active); });
+    }
+  }
+  function req() { if (!ticking) { ticking = true; requestAnimationFrame(update); } }
+
+  /* clicking an index row scrolls until that card sits on top of the stack */
+  idx.forEach(function (li, i) {
+    li.querySelector('a').addEventListener('click', function (e) {
+      e.preventDefault();
+      var stack = document.querySelector('.why2__stack');
+      var stackTop = stack.getBoundingClientRect().top + window.scrollY;
+      var step = cards[0].offsetHeight + (parseFloat(getComputedStyle(cards[0]).marginBottom) || 0);
+      var stick = parseFloat(getComputedStyle(cards[i]).top) || 0;
+      window.scrollTo({ top: stackTop + i * step - stick + 4, behavior: reduce ? 'auto' : 'smooth' });
+    });
+  });
+
+  window.addEventListener('scroll', req, { passive: true });
+  window.addEventListener('resize', req);
+  update();
+})();
+
+/* A closer look: the three photos start stacked in the centre of the row and spread to their places as the section scrolls.
+   Works for the desktop row and the mobile collage: each photo travels from the row centre to wherever the layout puts it. */
+(function () {
+  'use strict';
+  var sec = document.querySelector('.gal');
+  if (!sec) return;
+  var row = sec.querySelector('.gal__row');
+  var figs = ['.gal__fig--l', '.gal__fig--c', '.gal__fig--r'].map(function (s) { return sec.querySelector(s); });
+  if (!row || figs.some(function (f) { return !f; })) return;
+  var tilt = [-7, 0, 7];
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var ticking = false;
+  function clamp(v) { return Math.max(0, Math.min(1, v)); }
+  function ease(t) { return 1 - Math.pow(1 - t, 3); }
+  function update() {
+    ticking = false;
+    if (reduce) { figs.forEach(function (f) { f.style.transform = ''; }); return; }
+    var r = sec.getBoundingClientRect();
+    var total = sec.offsetHeight - window.innerHeight;
+    var p = clamp(-r.top / total);
+    var spread = ease(clamp(p / 0.55));
+    var drift = clamp((p - 0.55) / 0.45);
+    var wide = window.innerWidth > 860;
+    var rr = row.getBoundingClientRect();
+    var mx = rr.left + rr.width / 2, my = rr.top + rr.height / 2;
+    figs.forEach(function (f, i) {
+      var b = f.getBoundingClientRect();
+      var cx = b.left + b.width / 2 - (f._tx || 0), cy = b.top + b.height / 2 - (f._ty || 0);
+      var dx = (mx - cx) * (1 - spread) + (wide ? (i - 1) * drift * 26 : 0);
+      var dy = (my - cy) * (1 - spread);
+      f._tx = dx; f._ty = dy;
+      var sc = 0.9 + 0.1 * spread;
+      if (i === 1) { f.style.transform = 'translate3d(' + dx.toFixed(1) + 'px,' + dy.toFixed(1) + 'px,0) scale(' + (wide ? 0.92 + 0.08 * spread : sc).toFixed(3) + ')'; return; }
+      f.style.transform = 'translate3d(' + dx.toFixed(1) + 'px,' + dy.toFixed(1) + 'px,0) rotate(' + (tilt[i] * (1 - spread)).toFixed(2) + 'deg) scale(' + sc.toFixed(3) + ')';
+    });
+  }
+  function req() { if (!ticking) { ticking = true; requestAnimationFrame(update); } }
+  window.addEventListener('scroll', req, { passive: true });
+  window.addEventListener('resize', req);
+  update();
 })();
