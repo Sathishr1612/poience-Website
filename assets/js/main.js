@@ -568,3 +568,63 @@
   window.addEventListener('resize', q);
   u();
 })();
+
+/* About photos: scroll-linked - the main photo rises in, the small photo slides in from the left, the seal spins in, the sand block and outline drift */
+(function () {
+  'use strict';
+  var art = document.querySelector('.about-art');
+  if (!art) return;
+  var main = art.querySelector('.about-art__main'), inset = art.querySelector('.about-art__inset'),
+      badge = art.querySelector('.about-art__badge'), block = art.querySelector('.about-art__block'), frame = art.querySelector('.about-art__frame');
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var ticking = false;
+  function cl(v) { return Math.max(0, Math.min(1, v)); }
+  function update() {
+    ticking = false;
+    var r = art.getBoundingClientRect(), vh = window.innerHeight;
+    var p = cl((vh - r.top) / (vh * 0.55 + r.height * 0.6));
+    var k = Math.pow(1 - p, 3);
+    var drift = ((r.top + r.height / 2) - vh / 2);
+    var w = Math.min(window.innerWidth * 0.5, 260);
+    if (main) main.style.transform = 'translate3d(' + (k * w * 0.5).toFixed(1) + 'px,' + (k * 70).toFixed(1) + 'px,0) scale(' + (1 - k * 0.06).toFixed(3) + ')';
+    if (inset) inset.style.transform = 'translate3d(' + (-k * w).toFixed(1) + 'px,' + (k * 110 + drift * -0.05).toFixed(1) + 'px,0) rotate(' + (-k * 8).toFixed(2) + 'deg)';
+    if (badge) badge.style.transform = 'translate3d(0,' + (-k * 60).toFixed(1) + 'px,0) rotate(' + (k * 200).toFixed(1) + 'deg) scale(' + (1 - k * 0.3).toFixed(3) + ')';
+    if (block) block.style.transform = 'translate3d(' + (k * 50).toFixed(1) + 'px,' + (drift * -0.06).toFixed(1) + 'px,0)';
+    if (frame) frame.style.transform = 'translate3d(' + (-k * 50).toFixed(1) + 'px,' + (drift * 0.06).toFixed(1) + 'px,0)';
+  }
+  function req() { if (!ticking) { ticking = true; requestAnimationFrame(update); } }
+  window.addEventListener('scroll', req, { passive: true });
+  window.addEventListener('resize', req);
+  update();
+})();
+
+/* Buttons: slide in from the left or right as you scroll (uses the independent "translate" property so hover effects keep working) */
+(function () {
+  'use strict';
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var pairs = [['.about-cta .btn', -1], ['.hs__end .btn', 1], ['.why2__cta', -1], ['.rv__foot .btn', 1], ['.cta-band .btn:nth-of-type(1)', -1], ['.cta-band .btn:nth-of-type(2)', 1]];
+  var items = [];
+  pairs.forEach(function (p) {
+    document.querySelectorAll(p[0]).forEach(function (el) { if (items.every(function (i) { return i.el !== el; })) items.push({ el: el, dir: p[1] }); });
+  });
+  if (!items.length) return;
+  var ticking = false;
+  function update() {
+    ticking = false;
+    var vh = window.innerHeight, dist = window.innerWidth < 700 ? 90 : 150;
+    items.forEach(function (it) {
+      var r = it.el.getBoundingClientRect();
+      if (it.el.closest('.hs__track')) {   /* inside the sideways track: just a gentle fade */
+        return;
+      }
+      var p = Math.max(0, Math.min(1, (vh * 0.98 - r.top) / (vh * 0.36)));
+      var k = Math.pow(1 - p, 3);
+      it.el.style.translate = (it.dir * dist * k).toFixed(1) + 'px 0';
+      it.el.style.opacity = Math.min(1, p * 1.6).toFixed(2);
+    });
+  }
+  function req() { if (!ticking) { ticking = true; requestAnimationFrame(update); } }
+  window.addEventListener('scroll', req, { passive: true });
+  window.addEventListener('resize', req);
+  update();
+})();
